@@ -1,0 +1,24 @@
+Linux
+
+https://ithelp.ithome.com.tw/articles/10235530
+
+https://cute-pulsar-25a.notion.site/linux-command-cheat-sheet-266d3756c4824d20a0e7371a7c3fcc3a#2e350ef1f58d48beabfe4bf577823599
+
+ls
+ls -l
+ls -a
+cd
+cd..
+cd/
+pwd
+rm
+rm -r
+mv
+mv 123.txt 456.txt
+cp
+mkdir
+chmod
+chown
+vi
+vim
+

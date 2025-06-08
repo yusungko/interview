@@ -1,0 +1,127 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Flask Chat Room</title>
+  <script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
+  <style>
+    body { font-family: sans-serif; padding: 20px; }
+    #chat { border: 1px solid #ccc; height: 250px; overflow-y: scroll; margin: 10px 0; padding: 5px; }
+    input, button { margin: 5px; }
+  </style>
+</head>
+<body>
+  <h2>聊天室展示版</h2>
+
+  <div>
+    <input id="username" placeholder="使用者名稱">
+    <input id="password" type="password" placeholder="密碼">
+    <button onclick="register()">註冊</button>
+    <button onclick="login()">登入</button>
+    <p id="status"></p>
+  </div>
+
+  <hr>
+
+  <div>
+    <input id="room" placeholder="聊天室名稱">
+    <button onclick="createRoom()">建立聊天室</button>
+    <button onclick="enterRoom()">加入聊天室</button>
+  </div>
+
+  <div id="chat"></div>
+
+  <input id="msg" placeholder="輸入訊息">
+  <button onclick="send()">發送</button>
+
+  <script>
+    const socket = io("http://localhost:5000");
+    let currentRoom = "";
+
+    function register() {
+      fetch("http://localhost:5000/register", {
+        method: "POST",
+        headers: {"Content-Type": "application/json"},
+        body: JSON.stringify({
+          username: document.getElementById("username").value,
+          password: document.getElementById("password").value
+        }),
+        credentials: "include"
+      }).then(r => r.json()).then(data => {
+        console.log("註冊結果：", data);
+        document.getElementById("status").innerText = data.message || data.error;
+      });
+    }
+
+    function login() {
+      fetch("http://localhost:5000/login", {
+        method: "POST",
+        headers: {"Content-Type": "application/json"},
+        body: JSON.stringify({
+          username: document.getElementById("username").value,
+          password: document.getElementById("password").value
+        }),
+        credentials: "include"
+      }).then(r => r.json()).then(data => {
+        console.log("登入結果：", data);
+        document.getElementById("status").innerText = data.message || data.error;
+      });
+    }
+
+    function createRoom() {
+      fetch("http://localhost:5000/chatrooms/create", {
+        method: "POST",
+        headers: {"Content-Type": "application/json"},
+        body: JSON.stringify({ room_name: document.getElementById("room").value }),
+        credentials: "include"
+      }).then(r => r.json()).then(data => {
+        alert(data.message || data.error);
+      });
+    }
+
+    function enterRoom() {
+      const room = document.getElementById("room").value;
+      const username = document.getElementById("username").value;
+
+      fetch("http://localhost:5000/chatrooms/enter", {
+        method: "POST",
+        headers: {"Content-Type": "application/json"},
+        body: JSON.stringify({ room_name: room }),
+        credentials: "include"
+      }).then(r => r.json()).then(data => {
+        alert(data.message || data.error);
+        currentRoom = room;
+        socket.emit("join", {username, room});
+        loadHistory(room);
+      });
+    }
+
+    function loadHistory(room) {
+      fetch(`http://localhost:5000/chatrooms/messages/${room}`)
+        .then(r => r.json())
+        .then(msgs => {
+          const chat = document.getElementById("chat");
+          chat.innerHTML = "";
+          msgs.forEach(m => {
+            chat.innerHTML += `<div><b>${m.username}:</b> ${m.msg}</div>`;
+          });
+          chat.scrollTop = chat.scrollHeight;
+        });
+    }
+
+    function send() {
+      const msg = document.getElementById("msg").value;
+      const username = document.getElementById("username").value;
+      if (msg && currentRoom) {
+        socket.emit("message", {username, room: currentRoom, msg});
+        document.getElementById("msg").value = "";
+      }
+    }
+
+    socket.on("message", data => {
+      const chat = document.getElementById("chat");
+      chat.innerHTML += `<div><b>${data.username || '系統'}:</b> ${data.msg}</div>`;
+      chat.scrollTop = chat.scrollHeight;
+    });
+  </script>
+</body>
+</html>
